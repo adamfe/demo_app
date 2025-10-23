@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="500" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background (semi-transparent dark) -->
+  <rect x="40" y="20" width="320" height="460" rx="20" fill="rgba(40, 40, 40, 0.95)" stroke="rgba(60, 60, 60, 0.8)" stroke-width="1"/>
+
+  <!-- Title -->
+  <text x="200" y="50" font-family="Arial, sans-serif" font-size="14" fill="#FFFFFF" text-anchor="middle" font-weight="bold">Recording Indicator Overlay</text>
+
+  <!-- Claw Icon Area -->
+  <rect x="140" y="80" width="120" height="120" rx="10" fill="rgba(50, 50, 50, 0.3)" stroke="rgba(80, 80, 80, 0.5)" stroke-width="1" stroke-dasharray="3,3"/>
+
+  <!-- Glow effect (outer rings) -->
+  <ellipse cx="200" cy="140" rx="50" ry="50" fill="none" stroke="#FF6B35" stroke-width="2" opacity="0.2"/>
+  <ellipse cx="200" cy="140" rx="45" ry="45" fill="none" stroke="#FF6B35" stroke-width="2" opacity="0.3"/>
+  <ellipse cx="200" cy="140" rx="40" ry="40" fill="none" stroke="#FF6B35" stroke-width="2" opacity="0.4"/>
+
+  <!-- Claw Icon (Claude-inspired) -->
+  <!-- Center finger (longest) -->
+  <path d="M 200 110 Q 210 125 205 160" stroke="#FF6B35" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <!-- Right finger -->
+  <path d="M 220 120 Q 235 135 240 155" stroke="#FF6B35" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <!-- Left finger -->
+  <path d="M 180 120 Q 165 135 160 155" stroke="#FF6B35" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <!-- Palm/base (connecting arc) -->
+  <path d="M 176 130 Q 200 115 224 130" stroke="#FF6B35" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <!-- Pulsing animation indicator -->
+  <text x="200" y="220" font-family="Arial, sans-serif" font-size="10" fill="#888888" text-anchor="middle" font-style="italic">↕ Pulsates 1.0x → 1.15x</text>
+
+  <!-- Status Label -->
+  <text x="200" y="250" font-family="Arial, sans-serif" font-size="18" fill="#FF6B35" text-anchor="middle" font-weight="bold">🔴 Recording...</text>
+
+  <!-- Waveform Area -->
+  <rect x="100" y="270" width="200" height="50" rx="5" fill="#2C2C2C"/>
+
+  <!-- Waveform bars (simulated) -->
+  <rect x="104" y="295" width="3" height="20" fill="#FF6B35" opacity="0.7"/>
+  <rect x="108" y="290" width="3" height="30" fill="#FF6B35" opacity="0.8"/>
+  <rect x="112" y="285" width="3" height="35" fill="#FF8844" opacity="0.9"/>
+  <rect x="116" y="288" width="3" height="32" fill="#FF8844" opacity="0.8"/>
+  <rect x="120" y="293" width="3" height="25" fill="#FF6B35" opacity="0.7"/>
+  <rect x="124" y="297" width="3" height="18" fill="#FF6B35" opacity="0.6"/>
+  <rect x="128" y="300" width="3" height="15" fill="#FF6B35" opacity="0.5"/>
+  <rect x="132" y="298" width="3" height="17" fill="#FF6B35" opacity="0.6"/>
+  <rect x="136" y="294" width="3" height="26" fill="#FF6B35" opacity="0.7"/>
+  <rect x="140" y="287" width="3" height="33" fill="#FF8844" opacity="0.8"/>
+  <rect x="144" y="283" width="3" height="38" fill="#FF8844" opacity="0.9"/>
+  <rect x="148" y="280" width="3" height="42" fill="#FF4444" opacity="0.95"/>
+  <rect x="152" y="283" width="3" height="38" fill="#FF8844" opacity="0.9"/>
+  <rect x="156" y="288" width="3" height="32" fill="#FF8844" opacity="0.8"/>
+  <rect x="160" y="292" width="3" height="27" fill="#FF6B35" opacity="0.7"/>
+  <rect x="164" y="296" width="3" height="20" fill="#FF6B35" opacity="0.6"/>
+  <rect x="168" y="299" width="3" height="16" fill="#FF6B35" opacity="0.5"/>
+  <rect x="172" y="301" width="3" height="13" fill="#FF6B35" opacity="0.4"/>
+  <rect x="176" y="303" width="3" height="10" fill="#FF6B35" opacity="0.4"/>
+  <rect x="180" y="304" width="3" height="8" fill="#FF6B35" opacity="0.3"/>
+
+  <text x="200" y="340" font-family="Arial, sans-serif" font-size="10" fill="#888888" text-anchor="middle" font-style="italic">Real-time audio visualization →</text>
+
+  <!-- Timer -->
+  <text x="200" y="380" font-family="Monaco, monospace" font-size="28" fill="#FFFFFF" text-anchor="middle" font-weight="bold">0:03</text>
+
+  <!-- Instruction -->
+  <text x="200" y="410" font-family="Arial, sans-serif" font-size="12" fill="rgba(255, 255, 255, 0.7)" text-anchor="middle">Release Caps Lock to finish</text>
+
+  <!-- Annotations -->
+  <g opacity="0.6">
+    <!-- Arrow pointing to claw -->
+    <line x1="330" y1="140" x2="270" y2="140" stroke="#00AA00" stroke-width="1" marker-end="url(#arrowhead)"/>
+    <text x="335" y="135" font-family="Arial, sans-serif" font-size="11" fill="#00AA00">Pulsating</text>
+    <text x="335" y="148" font-family="Arial, sans-serif" font-size="11" fill="#00AA00">claw icon</text>
+
+    <!-- Arrow pointing to waveform -->
+    <line x1="330" y1="295" x2="305" y2="295" stroke="#00AA00" stroke-width="1" marker-end="url(#arrowhead)"/>
+    <text x="335" y="293" font-family="Arial, sans-serif" font-size="11" fill="#00AA00">Waveform</text>
+    <text x="335" y="306" font-family="Arial, sans-serif" font-size="11" fill="#00AA00">updates live</text>
+  </g>
+
+  <!-- Arrow marker definition -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#00AA00" />
+    </marker>
+  </defs>
+
+  <!-- Window properties -->
+  <text x="200" y="460" font-family="Arial, sans-serif" font-size="9" fill="#666666" text-anchor="middle">
+    Always on top • Semi-transparent • Centered on screen
+  </text>
+</svg>
