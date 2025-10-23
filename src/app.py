@@ -163,6 +163,9 @@ class VoiceModeApp(rumps.App):
         self.title = "🔴"  # Red dot
         self.menu_status.title = "🔴 Recording..."
 
+        # Create recording indicator if needed (lazy creation on main thread)
+        self._ensure_recording_indicator()
+
         # Show recording indicator (pulsating claw overlay)
         if self.recording_indicator:
             self.recording_indicator.show_recording()
@@ -356,12 +359,17 @@ github.com/yourusername/voice-mode
         # Quit
         rumps.quit_application()
 
+    def _ensure_recording_indicator(self):
+        """Lazily create recording indicator on main thread"""
+        if self.recording_indicator is None and self.config.get("ui.claw_icon_enabled", True):
+            # Create on-demand (must be on main thread)
+            self.recording_indicator = RecordingIndicator()
+
     def initialize_components(self):
         """Initialize all components after checking permissions"""
         try:
-            # Initialize recording indicator (PyQt6 widget)
-            if self.config.get("ui.claw_icon_enabled", True):
-                self.recording_indicator = RecordingIndicator()
+            # Don't create recording indicator here - will be created lazily on main thread
+            # (PyQt6 widgets must be created on main thread)
 
             # Initialize hotkey manager
             hotkey_type = self.config.get("hotkey.type", "caps_lock")
@@ -382,13 +390,13 @@ github.com/yourusername/voice-mode
             )
 
             # Set up audio level callback to update recording indicator
-            if self.recording_indicator:
-                def on_audio_chunk(chunk, level):
-                    # Update recording indicator with audio level
-                    if self.recording_indicator:
-                        self.recording_indicator.update_audio_level(level)
+            # Callback will update indicator if it exists (created lazily)
+            def on_audio_chunk(chunk, level):
+                # Update recording indicator with audio level (if exists)
+                if self.recording_indicator:
+                    self.recording_indicator.update_audio_level(level)
 
-                self.audio_recorder.set_audio_chunk_callback(on_audio_chunk)
+            self.audio_recorder.set_audio_chunk_callback(on_audio_chunk)
 
             # Initialize model manager
             print("Initializing Whisper model manager...")
