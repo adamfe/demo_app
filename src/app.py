@@ -28,6 +28,18 @@ from utils.model_manager import ModelManager
 qt_app = None
 
 
+class MainThreadBridge(QObject):
+    """
+    Thread-safe bridge to execute PyQt6 operations on the main thread.
+
+    PyQt signals are thread-safe and automatically route to the main thread,
+    even when emitted from background threads (like pynput's hotkey thread).
+    """
+    show_recording_signal = pyqtSignal()
+    hide_recording_signal = pyqtSignal()
+    update_audio_level_signal = pyqtSignal(float)
+
+
 class VoiceModeApp(rumps.App):
     """
     Main Voice Mode application
@@ -62,6 +74,12 @@ class VoiceModeApp(rumps.App):
 
         # Recording indicator (pulsating claw overlay)
         self.recording_indicator: Optional[RecordingIndicator] = None
+
+        # Thread-safe bridge for Qt operations from background threads
+        self.qt_bridge = MainThreadBridge()
+        self.qt_bridge.show_recording_signal.connect(self._show_recording_on_main_thread)
+        self.qt_bridge.hide_recording_signal.connect(self._hide_recording_on_main_thread)
+        self.qt_bridge.update_audio_level_signal.connect(self._update_audio_level_on_main_thread)
 
         # Setup menu
         self._setup_menu()
@@ -159,27 +177,34 @@ class VoiceModeApp(rumps.App):
         self.menu_status.title = f"● Ready to dictate\n   {hotkey_desc} to record"
 
     def _on_recording_start(self, **kwargs):
-        """Called when starting recording"""
+        """Called when starting recording (from background thread)"""
         self.title = "🔴"  # Red dot
         self.menu_status.title = "🔴 Recording..."
 
-        # Schedule recording indicator creation/show on main Qt thread
+        # Emit signal to show recording indicator on main thread
         # (This callback is triggered from pynput background thread)
-        def show_indicator_on_main_thread():
-            self._ensure_recording_indicator()
-            if self.recording_indicator:
-                self.recording_indicator.show_recording()
-
-        QTimer.singleShot(0, show_indicator_on_main_thread)
+        self.qt_bridge.show_recording_signal.emit()
 
     def _on_recording_stop(self):
-        """Called when stopping recording"""
-        # Schedule hiding recording indicator on main Qt thread
-        def hide_indicator_on_main_thread():
-            if self.recording_indicator:
-                self.recording_indicator.hide_recording()
+        """Called when stopping recording (from background thread)"""
+        # Emit signal to hide recording indicator on main thread
+        self.qt_bridge.hide_recording_signal.emit()
 
-        QTimer.singleShot(0, hide_indicator_on_main_thread)
+    def _show_recording_on_main_thread(self):
+        """Show recording indicator (runs on main Qt thread via signal)"""
+        self._ensure_recording_indicator()
+        if self.recording_indicator:
+            self.recording_indicator.show_recording()
+
+    def _hide_recording_on_main_thread(self):
+        """Hide recording indicator (runs on main Qt thread via signal)"""
+        if self.recording_indicator:
+            self.recording_indicator.hide_recording()
+
+    def _update_audio_level_on_main_thread(self, level: float):
+        """Update audio level (runs on main Qt thread via signal)"""
+        if self.recording_indicator:
+            self.recording_indicator.update_audio_level(level)
 
     def _on_processing(self, **kwargs):
         """Called when starting transcription"""
@@ -397,13 +422,9 @@ github.com/yourusername/voice-mode
             # Set up audio level callback to update recording indicator
             # Callback will update indicator if it exists (created lazily)
             def on_audio_chunk(chunk, level):
-                # Update recording indicator with audio level (if exists)
-                # Schedule on main Qt thread since this callback runs on audio thread
-                def update_level_on_main_thread():
-                    if self.recording_indicator:
-                        self.recording_indicator.update_audio_level(level)
-
-                QTimer.singleShot(0, update_level_on_main_thread)
+                # Emit signal to update audio level on main Qt thread
+                # (This callback runs on audio thread)
+                self.qt_bridge.update_audio_level_signal.emit(level)
 
             self.audio_recorder.set_audio_chunk_callback(on_audio_chunk)
 
