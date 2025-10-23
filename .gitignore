@@ -80,3 +80,13 @@ temp/
 # User data directories
 ~/Library/Application Support/VoiceMode/settings.yaml
 ~/Library/Application Support/VoiceMode/history.json
+
+# Rails config files (not part of Voice Mode Python project)
+config/application.rb
+config/boot.rb
+config/database.yml
+config/environment.rb
+config/environments/
+config/initializers/
+config/locales/
+config/routes.rb
