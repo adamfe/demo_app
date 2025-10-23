@@ -359,11 +359,21 @@ class VoiceModeApp(rumps.App):
             # Return to idle
             self.state_machine.transition_to(AppState.IDLE)
 
-            # Show notification
+            # Show notification with transcribed text
+            print("\n" + "="*60)
+            print("✅ TRANSCRIPTION COMPLETE!")
+            print("="*60)
+            print(f"📋 Text copied to clipboard:")
+            print(f"   \"{transcription}\"")
+            print(f"   Language: {detected_language}")
+            print(f"   Length: {len(transcription)} characters")
+            print("="*60 + "\n")
+
             rumps.notification(
-                title="Voice Mode",
-                subtitle=f"Text copied ({detected_language})",
-                message=transcription[:100] + ("..." if len(transcription) > 100 else "")
+                title="✅ Voice Mode - Transcription Complete",
+                subtitle=f"Copied to clipboard ({detected_language})",
+                message=transcription[:200] + ("..." if len(transcription) > 200 else ""),
+                sound=True  # Play notification sound
             )
 
         except Exception as e:
@@ -562,6 +572,20 @@ def main():
     # Check permissions first
     print("\nChecking macOS permissions...")
     all_granted, missing = check_and_request_permissions(interactive=True)
+
+    # Always show accessibility message since it's critical for hotkeys
+    print("\n" + "="*60)
+    print("⚠️  IMPORTANT: Accessibility Permission Required")
+    print("="*60)
+    print("For Caps Lock detection to work, you need to grant")
+    print("Accessibility permission to Terminal (or Python).")
+    print()
+    print("If Caps Lock doesn't respond:")
+    print("  1. Open System Settings")
+    print("  2. Go to Privacy & Security → Accessibility")
+    print("  3. Enable the toggle for Terminal (or Python)")
+    print("  4. Restart this app")
+    print("="*60 + "\n")
 
     if not all_granted:
         print("\n⚠️  Some permissions are missing:")
