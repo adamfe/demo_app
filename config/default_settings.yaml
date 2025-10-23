@@ -1,0 +1,150 @@
+# Voice Mode - Default Settings
+# This file contains the default configuration
+# User settings will be stored in ~/Library/Application Support/VoiceMode/settings.yaml
+
+hotkey:
+  # Primary hotkey for recording
+  # Options: "caps_lock", "fn", "option+space", "control+command+space", "custom"
+  type: "caps_lock"
+
+  # Fallback if caps_lock doesn't work
+  fallback: "option+space"
+
+  # Stop recording early (optional)
+  stop_key: "escape"
+
+audio:
+  # Audio recording settings
+  sample_rate: 16000        # Whisper requires 16kHz
+  channels: 1               # Mono
+  dtype: "float32"          # Audio data type
+  blocksize: 1024           # Buffer size
+
+  # Input device (null = system default)
+  input_device: null
+
+  # Audio feedback
+  play_start_sound: true
+  play_stop_sound: true
+  beep_on_error: true
+
+transcription:
+  # Transcription engine
+  # Options: "whisper", "whisper-cpp", "mlx-whisper"
+  engine: "whisper"
+
+  # Whisper model
+  # Options: "tiny", "base", "small", "medium", "large-v2", "large-v3"
+  model: "medium"
+
+  # Language (auto-detect or specific: "en", "es", "fr", etc.)
+  language: "auto"
+
+  # Use context to improve transcription
+  use_context: true
+
+  # Performance settings
+  use_gpu: true             # Use Metal acceleration on Mac
+  enable_vad: true          # Voice Activity Detection
+
+  # Whisper-specific settings
+  temperature: 0.0          # Deterministic transcription
+  beam_size: 5              # Beam search size
+  best_of: 5                # Number of candidates
+
+  # Post-processing
+  suppress_tokens: "-1"     # Suppress specific tokens
+  initial_prompt: ""        # Optional prompt to guide Whisper
+
+context:
+  # Context awareness settings
+  enabled: true
+
+  # What to capture
+  capture_screen: true      # Screenshot of active window
+  capture_tabs: true        # Browser tab titles
+  capture_apps: true        # Running applications
+  ocr_enabled: true         # Extract text from screen
+
+  # Context limits
+  max_context_chars: 2000   # Maximum characters from context
+  max_apps: 5               # Maximum number of apps to include
+  max_tabs: 10              # Maximum browser tabs to include
+
+  # Which browsers to monitor
+  browsers:
+    - "Safari"
+    - "Google Chrome"
+    - "Firefox"
+    - "Arc"
+    - "Brave Browser"
+
+claude:
+  # Claude AI processing
+  enabled: false            # Toggle Claude refinement (disabled by default)
+
+  # API settings
+  model: "claude-3-5-sonnet-20241022"
+  api_key: ""               # Set via settings UI or .env file
+
+  # Default prompt mode
+  # Options: "formal", "casual", "code_comment", "email", "custom"
+  default_mode: "formal"
+
+  # Generation settings
+  max_tokens: 1000
+  temperature: 1.0
+
+  # Include context in Claude prompt
+  include_context: true
+
+  # Timeout (seconds)
+  timeout: 30
+
+output:
+  # Output settings
+  copy_to_clipboard: true
+
+  # Notifications
+  show_notification: true
+  notification_sound: true
+
+  # History
+  save_history: true
+  history_limit: 100        # Keep last N transcriptions
+  history_location: "~/Library/Application Support/VoiceMode/history.json"
+
+ui:
+  # User interface settings
+
+  # Recording indicator
+  show_recording_indicator: true
+  indicator_position: "center"  # "center", "top", "cursor"
+  indicator_opacity: 0.95
+
+  # Pulsating claw icon settings
+  claw_icon_enabled: true
+  claw_pulse_speed: 1.0     # Animation speed (1.0 = normal)
+  claw_color: "#FF6B35"     # Orange/coral (Claude brand color)
+  show_waveform: true       # Show audio waveform
+  show_timer: true          # Show recording timer
+  show_live_preview: false  # Show transcription preview (resource intensive)
+
+  # Menu bar
+  menu_bar_icon_style: "minimal"  # "minimal", "detailed"
+  show_status_in_menu: true
+
+general:
+  # General application settings
+  launch_at_login: false
+  check_for_updates: true
+
+  # Permissions
+  check_permissions_on_start: true
+
+  # Logging
+  log_level: "INFO"         # "DEBUG", "INFO", "WARNING", "ERROR"
+  log_location: "~/Library/Logs/VoiceMode/app.log"
+
+  # Performance
+  process_priority: "normal"  # "low", "normal", "high"
