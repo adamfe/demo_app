@@ -1,0 +1,50 @@
+# Voice Mode - macOS Requirements
+
+# GUI Framework
+rumps==0.4.0                    # macOS menu bar app framework
+PyQt6==6.6.1                    # Settings window GUI
+PyQt6-Qt6==6.6.1               # Qt6 bindings
+
+# Audio Recording
+sounddevice==0.4.6              # Cross-platform audio I/O
+numpy==1.26.3                   # Audio data processing
+scipy==1.11.4                   # Signal processing
+
+# Whisper Integration (choose one or both)
+openai-whisper==20231117        # Official OpenAI Whisper (fallback)
+# mlx-whisper==0.1.0            # Apple Silicon optimized (uncomment if using M1/M2/M3)
+
+# Alternative: whisper.cpp Python bindings (faster)
+# whisper-cpp-python==0.1.0     # Uncomment for whisper.cpp
+
+# macOS System Integration
+pyobjc-core==10.1               # Python-Objective-C bridge
+pyobjc-framework-Cocoa==10.1    # macOS Cocoa framework
+pyobjc-framework-Quartz==10.1   # Screen capture
+pyobjc-framework-Vision==10.1   # OCR (macOS Vision framework)
+pyobjc-framework-ApplicationServices==10.1  # Accessibility
+
+# Keyboard Monitoring
+pynput==1.7.6                   # Keyboard/mouse monitoring
+
+# Claude API
+anthropic==0.18.1               # Claude API client
+
+# Clipboard
+pyperclip==1.8.2                # Clipboard operations
+# Alternative: use native AppKit via pyobjc (no additional package needed)
+
+# Configuration
+PyYAML==6.0.1                   # YAML config files
+
+# Utilities
+python-dotenv==1.0.0            # Environment variables
+requests==2.31.0                # HTTP requests
+
+# Development
+pytest==7.4.3                   # Testing
+black==23.12.1                  # Code formatting
+pylint==3.0.3                   # Linting
+
+# Packaging
+py2app==0.28.7                  # Build macOS .app bundle
