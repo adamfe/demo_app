@@ -17,9 +17,11 @@ from PyQt6.QtCore import QTimer, pyqtSignal, QObject
 from core.state_machine import StateMachine, AppState
 from core.hotkey_manager import HotkeyManager
 from core.audio_recorder import AudioRecorder
+from core.whisper_engine import WhisperEngine
 from gui.recording_indicator import RecordingIndicator
 from utils.config import get_config
 from utils.permissions import check_and_request_permissions, Permission
+from utils.model_manager import ModelManager
 
 
 # Global QApplication instance (needed for PyQt6 widgets)
@@ -54,6 +56,8 @@ class VoiceModeApp(rumps.App):
         # Components (will be initialized later)
         self.hotkey_manager: Optional[HotkeyManager] = None
         self.audio_recorder: Optional[AudioRecorder] = None
+        self.whisper_engine: Optional[WhisperEngine] = None
+        self.model_manager: Optional[ModelManager] = None
         self.current_audio: Optional[np.ndarray] = None
 
         # Recording indicator (pulsating claw overlay)
@@ -224,13 +228,30 @@ class VoiceModeApp(rumps.App):
     def _process_audio(self):
         """Process recorded audio (transcription + optional Claude)"""
         try:
-            # TODO: Implement Whisper transcription
-            # For now, just simulate processing
-            import time
-            time.sleep(2)  # Simulate processing
+            if not self.whisper_engine or self.current_audio is None:
+                raise RuntimeError("Whisper engine not initialized or no audio to process")
 
-            # Placeholder transcription
-            transcription = "[Transcription will be implemented in next phase]"
+            # Transcribe with Whisper
+            print(f"Transcribing {len(self.current_audio) / 16000:.2f}s of audio...")
+
+            language = self.config.get("transcription.language")
+            if language == "auto":
+                language = None  # Let Whisper auto-detect
+
+            result = self.whisper_engine.transcribe(
+                self.current_audio,
+                language=language,
+                temperature=self.config.get("transcription.temperature", 0.0)
+            )
+
+            transcription = result["text"]
+            detected_language = result["language"]
+
+            print(f"✓ Transcription complete ({detected_language}): {transcription[:50]}...")
+
+            # TODO: Optional Claude refinement
+            # if self.config.get("claude.enabled", False):
+            #     transcription = self._refine_with_claude(transcription)
 
             # Transition to copying
             self.state_machine.transition_to(AppState.COPYING)
@@ -244,11 +265,12 @@ class VoiceModeApp(rumps.App):
             # Show notification
             rumps.notification(
                 title="Voice Mode",
-                subtitle="Text copied to clipboard",
+                subtitle=f"Text copied ({detected_language})",
                 message=transcription[:100] + ("..." if len(transcription) > 100 else "")
             )
 
         except Exception as e:
+            print(f"✗ Error processing audio: {e}")
             self.state_machine.transition_to(AppState.ERROR, error=str(e))
 
     def _copy_to_clipboard(self, text: str):
@@ -367,6 +389,42 @@ github.com/yourusername/voice-mode
                         self.recording_indicator.update_audio_level(level)
 
                 self.audio_recorder.set_audio_chunk_callback(on_audio_chunk)
+
+            # Initialize model manager
+            print("Initializing Whisper model manager...")
+            self.model_manager = ModelManager()
+
+            # Initialize Whisper engine
+            model_name = self.config.get("transcription.model", "medium")
+            print(f"Initializing Whisper engine (model: {model_name})...")
+
+            self.whisper_engine = WhisperEngine(model_name=model_name)
+
+            # Set up progress callback
+            def on_whisper_progress(message, progress):
+                print(f"  Whisper: {message} ({progress:.0%})")
+                # Update menu status
+                self.menu_status.title = f"⏳ {message}"
+
+            self.whisper_engine.set_progress_callback(on_whisper_progress)
+
+            # Check if model is downloaded, if not download it
+            if not self.model_manager.is_model_downloaded(model_name):
+                print(f"Model '{model_name}' not found, downloading...")
+                self.menu_status.title = f"⬇️  Downloading {model_name} model..."
+
+                # Download model (this will take a while for larger models)
+                if not self.model_manager.download_model(model_name):
+                    raise RuntimeError(f"Failed to download model '{model_name}'")
+
+            # Load model into engine
+            print(f"Loading Whisper model '{model_name}'...")
+            self.menu_status.title = f"⏳ Loading {model_name} model..."
+
+            if not self.whisper_engine.load_model():
+                raise RuntimeError(f"Failed to load Whisper model '{model_name}'")
+
+            print(f"✓ Whisper engine ready with model '{model_name}'")
 
             # Transition to IDLE (ready)
             self.state_machine.transition_to(AppState.IDLE)
