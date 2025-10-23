@@ -9,12 +9,21 @@ import threading
 import numpy as np
 from pathlib import Path
 from typing import Optional
+import sys
+
+from PyQt6.QtWidgets import QApplication
+from PyQt6.QtCore import QTimer, pyqtSignal, QObject
 
 from core.state_machine import StateMachine, AppState
 from core.hotkey_manager import HotkeyManager
 from core.audio_recorder import AudioRecorder
+from gui.recording_indicator import RecordingIndicator
 from utils.config import get_config
 from utils.permissions import check_and_request_permissions, Permission
+
+
+# Global QApplication instance (needed for PyQt6 widgets)
+qt_app = None
 
 
 class VoiceModeApp(rumps.App):
@@ -47,8 +56,8 @@ class VoiceModeApp(rumps.App):
         self.audio_recorder: Optional[AudioRecorder] = None
         self.current_audio: Optional[np.ndarray] = None
 
-        # Recording indicator (GUI window - will implement later)
-        self.recording_indicator = None
+        # Recording indicator (pulsating claw overlay)
+        self.recording_indicator: Optional[RecordingIndicator] = None
 
         # Setup menu
         self._setup_menu()
@@ -147,17 +156,18 @@ class VoiceModeApp(rumps.App):
 
     def _on_recording_start(self, **kwargs):
         """Called when starting recording"""
-        self.title = "🔴"  # Red dot (will add pulsing animation later)
+        self.title = "🔴"  # Red dot
         self.menu_status.title = "🔴 Recording..."
 
-        # Show recording indicator (pulsating claw - implement later)
-        # TODO: Show pulsating claw overlay
+        # Show recording indicator (pulsating claw overlay)
+        if self.recording_indicator:
+            self.recording_indicator.show_recording()
 
     def _on_recording_stop(self):
         """Called when stopping recording"""
         # Hide recording indicator
-        # TODO: Hide pulsating claw overlay
-        pass
+        if self.recording_indicator:
+            self.recording_indicator.hide_recording()
 
     def _on_processing(self, **kwargs):
         """Called when starting transcription"""
@@ -327,6 +337,10 @@ github.com/yourusername/voice-mode
     def initialize_components(self):
         """Initialize all components after checking permissions"""
         try:
+            # Initialize recording indicator (PyQt6 widget)
+            if self.config.get("ui.claw_icon_enabled", True):
+                self.recording_indicator = RecordingIndicator()
+
             # Initialize hotkey manager
             hotkey_type = self.config.get("hotkey.type", "caps_lock")
             self.hotkey_manager = HotkeyManager(hotkey_type=hotkey_type)
@@ -345,6 +359,15 @@ github.com/yourusername/voice-mode
                 device=self.config.get("audio.input_device")
             )
 
+            # Set up audio level callback to update recording indicator
+            if self.recording_indicator:
+                def on_audio_chunk(chunk, level):
+                    # Update recording indicator with audio level
+                    if self.recording_indicator:
+                        self.recording_indicator.update_audio_level(level)
+
+                self.audio_recorder.set_audio_chunk_callback(on_audio_chunk)
+
             # Transition to IDLE (ready)
             self.state_machine.transition_to(AppState.IDLE)
 
@@ -357,9 +380,26 @@ github.com/yourusername/voice-mode
 
 def main():
     """Main entry point"""
+    global qt_app
+
     print("=" * 60)
     print("Voice Mode - AI-Powered Voice Dictation")
     print("=" * 60)
+
+    # Initialize Qt application (needed for PyQt6 widgets)
+    # We don't call exec() on it - rumps will handle the main event loop
+    print("\nInitializing Qt application...")
+    qt_app = QApplication(sys.argv)
+
+    # Process Qt events periodically (needed for PyQt6 widgets to work with rumps)
+    def process_qt_events():
+        if qt_app:
+            qt_app.processEvents()
+
+    # Set up a timer to process Qt events periodically
+    qt_timer = QTimer()
+    qt_timer.timeout.connect(process_qt_events)
+    qt_timer.start(50)  # Process events every 50ms
 
     # Check permissions first
     print("\nChecking macOS permissions...")
@@ -393,7 +433,7 @@ def main():
 
     threading.Thread(target=init_thread, daemon=True).start()
 
-    # Run app
+    # Run app (rumps event loop)
     app.run()
 
 
