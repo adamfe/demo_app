@@ -68,10 +68,17 @@ class WhisperEngine:
         Automatically detect the best available device
 
         Returns:
-            Device name: "mps" (Apple Silicon), "cuda" (NVIDIA), or "cpu"
+            Device name: "cuda" (NVIDIA GPU) or "cpu"
+
+        Note: MPS (Apple Silicon) is not used because Whisper uses sparse tensors
+        which are not yet supported by PyTorch's MPS backend. Using CPU instead.
         """
+        # MPS has issues with sparse tensors used by Whisper
+        # Force CPU for now until PyTorch MPS supports sparse operations
         if torch.backends.mps.is_available():
-            return "mps"  # Apple Silicon (M1/M2/M3)
+            print("Note: Apple Silicon (MPS) detected but using CPU")
+            print("      (MPS doesn't support Whisper's sparse tensors yet)")
+            return "cpu"  # Force CPU even on Apple Silicon
         elif torch.cuda.is_available():
             return "cuda"  # NVIDIA GPU
         else:
