@@ -163,18 +163,23 @@ class VoiceModeApp(rumps.App):
         self.title = "🔴"  # Red dot
         self.menu_status.title = "🔴 Recording..."
 
-        # Create recording indicator if needed (lazy creation on main thread)
-        self._ensure_recording_indicator()
+        # Schedule recording indicator creation/show on main Qt thread
+        # (This callback is triggered from pynput background thread)
+        def show_indicator_on_main_thread():
+            self._ensure_recording_indicator()
+            if self.recording_indicator:
+                self.recording_indicator.show_recording()
 
-        # Show recording indicator (pulsating claw overlay)
-        if self.recording_indicator:
-            self.recording_indicator.show_recording()
+        QTimer.singleShot(0, show_indicator_on_main_thread)
 
     def _on_recording_stop(self):
         """Called when stopping recording"""
-        # Hide recording indicator
-        if self.recording_indicator:
-            self.recording_indicator.hide_recording()
+        # Schedule hiding recording indicator on main Qt thread
+        def hide_indicator_on_main_thread():
+            if self.recording_indicator:
+                self.recording_indicator.hide_recording()
+
+        QTimer.singleShot(0, hide_indicator_on_main_thread)
 
     def _on_processing(self, **kwargs):
         """Called when starting transcription"""
@@ -393,8 +398,12 @@ github.com/yourusername/voice-mode
             # Callback will update indicator if it exists (created lazily)
             def on_audio_chunk(chunk, level):
                 # Update recording indicator with audio level (if exists)
-                if self.recording_indicator:
-                    self.recording_indicator.update_audio_level(level)
+                # Schedule on main Qt thread since this callback runs on audio thread
+                def update_level_on_main_thread():
+                    if self.recording_indicator:
+                        self.recording_indicator.update_audio_level(level)
+
+                QTimer.singleShot(0, update_level_on_main_thread)
 
             self.audio_recorder.set_audio_chunk_callback(on_audio_chunk)
 
