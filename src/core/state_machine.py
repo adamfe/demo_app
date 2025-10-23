@@ -28,7 +28,8 @@ class StateMachine:
     Valid transitions:
     INITIALIZING -> IDLE
     IDLE -> RECORDING
-    RECORDING -> PROCESSING
+    RECORDING -> PROCESSING (if audio captured)
+    RECORDING -> IDLE (if no audio captured)
     PROCESSING -> REFINING (if Claude enabled)
     PROCESSING -> COPYING (if Claude disabled)
     REFINING -> COPYING
@@ -115,7 +116,7 @@ class StateMachine:
         valid_transitions = {
             AppState.INITIALIZING: [AppState.IDLE],
             AppState.IDLE: [AppState.RECORDING],
-            AppState.RECORDING: [AppState.PROCESSING],
+            AppState.RECORDING: [AppState.PROCESSING, AppState.IDLE],  # Can return to IDLE if no audio
             AppState.PROCESSING: [AppState.REFINING, AppState.COPYING],
             AppState.REFINING: [AppState.COPYING],
             AppState.COPYING: [AppState.IDLE],

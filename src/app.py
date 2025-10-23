@@ -297,6 +297,10 @@ class VoiceModeApp(rumps.App):
             ).start()
         else:
             # No audio recorded, return to idle
+            print("⚠️  No audio captured. Possible causes:")
+            print("   - Released Caps Lock too quickly (try holding longer)")
+            print("   - Microphone permission not granted")
+            print("   - Microphone not working")
             self.state_machine.transition_to(AppState.IDLE)
 
     def _process_audio(self):
