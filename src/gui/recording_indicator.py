@@ -221,7 +221,15 @@ class RecordingIndicator(QWidget):
         self._center_on_screen()
 
         # Show window (NO ANIMATIONS, NO TIMERS)
+        print(f"    📱 RecordingIndicator.show_recording() - showing window...")
         self.show()
+
+        # Ensure window appears on top (macOS specific)
+        self.raise_()
+        self.activateWindow()
+
+        print(f"    ✓ Window shown, raised, and activated")
+        print(f"    ✓ Window visible: {self.isVisible()}, size: {self.size()}, pos: {self.pos()}")
 
     def hide_recording(self):
         """Hide the recording indicator"""

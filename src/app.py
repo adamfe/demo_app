@@ -212,14 +212,21 @@ class VoiceModeApp(rumps.App):
         self.title = "🔴"  # Red dot
         self.menu_status.title = "🔴 Recording..."
 
+        # Terminal indicator (always visible)
+        print("\n" + "="*60)
+        print("🔴 RECORDING IN PROGRESS - SPEAK NOW")
+        print("   (Release Caps Lock when done)")
+        print("="*60 + "\n")
+
         # Request to show recording indicator (thread-safe)
         # (This callback is triggered from pynput background thread)
-        print("🎬 Recording started - requesting to show indicator...")
         self.qt_bridge.request_show_recording()
-        print("   Request sent to qt_bridge")
 
     def _on_recording_stop(self):
         """Called when stopping recording (from background thread)"""
+        # Terminal indicator
+        print("\n⚫ Recording stopped - processing...\n")
+
         # Request to hide recording indicator (thread-safe)
         self.qt_bridge.request_hide_recording()
 
@@ -238,7 +245,10 @@ class VoiceModeApp(rumps.App):
                 if self.recording_indicator:
                     print(f"  ✓ Recording indicator exists, calling show_recording()")
                     self.recording_indicator.show_recording()
-                    print(f"  ✓ show_recording() called")
+                    # Force Qt to process events immediately to show window
+                    if qt_app:
+                        qt_app.processEvents()
+                    print(f"  ✓ show_recording() called and events processed")
                 else:
                     print(f"  ✗ Recording indicator is None!")
 
@@ -305,10 +315,11 @@ class VoiceModeApp(rumps.App):
             ).start()
         else:
             # No audio recorded, return to idle
-            print("⚠️  No audio captured. Possible causes:")
-            print("   - Released Caps Lock too quickly (try holding longer)")
-            print("   - Microphone permission not granted")
-            print("   - Microphone not working")
+            print("\n⚠️  No audio captured. Possible causes:")
+            print("   - Released Caps Lock too quickly (try holding for at least 2 seconds)")
+            print("   - Microphone permission not granted (check System Settings)")
+            print("   - Microphone not working or muted")
+            print("\n💡 TIP: Hold Caps Lock for 2-3 seconds while speaking, then release.\n")
             self.state_machine.transition_to(AppState.IDLE)
 
     def _process_audio(self):
