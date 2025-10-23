@@ -214,7 +214,9 @@ class VoiceModeApp(rumps.App):
 
         # Request to show recording indicator (thread-safe)
         # (This callback is triggered from pynput background thread)
+        print("🎬 Recording started - requesting to show indicator...")
         self.qt_bridge.request_show_recording()
+        print("   Request sent to qt_bridge")
 
     def _on_recording_stop(self):
         """Called when stopping recording (from background thread)"""
@@ -231,11 +233,17 @@ class VoiceModeApp(rumps.App):
 
             # Execute on main thread
             if show:
+                print("📺 Showing recording indicator...")
                 self._ensure_recording_indicator()
                 if self.recording_indicator:
+                    print(f"  ✓ Recording indicator exists, calling show_recording()")
                     self.recording_indicator.show_recording()
+                    print(f"  ✓ show_recording() called")
+                else:
+                    print(f"  ✗ Recording indicator is None!")
 
             if hide:
+                print("📺 Hiding recording indicator...")
                 if self.recording_indicator:
                     self.recording_indicator.hide_recording()
 
@@ -438,7 +446,13 @@ github.com/yourusername/voice-mode
         """Lazily create recording indicator on main thread"""
         if self.recording_indicator is None and self.config.get("ui.claw_icon_enabled", True):
             # Create on-demand (must be on main thread)
+            print("  🎨 Creating RecordingIndicator...")
             self.recording_indicator = RecordingIndicator()
+            print(f"  ✓ RecordingIndicator created: {self.recording_indicator}")
+        elif self.recording_indicator is not None:
+            print(f"  ℹ️  RecordingIndicator already exists")
+        else:
+            print(f"  ⚠️  Claw icon disabled in config")
 
     def initialize_components(self):
         """Initialize all components after checking permissions"""

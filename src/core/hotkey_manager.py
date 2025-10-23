@@ -68,17 +68,20 @@ class HotkeyManager:
 
         if new_state != self.caps_lock_state:
             self.caps_lock_state = new_state
+            print(f"⌨️  Caps Lock state changed: {new_state}")
 
             if new_state:
                 # Caps Lock turned ON - start recording
                 if not self.is_recording:
                     self.is_recording = True
+                    print("  → Starting recording (Caps Lock ON)")
                     if self.on_start_recording:
                         self.on_start_recording()
             else:
                 # Caps Lock turned OFF - stop recording
                 if self.is_recording:
                     self.is_recording = False
+                    print("  → Stopping recording (Caps Lock OFF)")
                     if self.on_stop_recording:
                         self.on_stop_recording()
 
