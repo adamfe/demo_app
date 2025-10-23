@@ -12,7 +12,6 @@ from typing import Optional
 import sys
 
 from PyQt6.QtWidgets import QApplication
-from PyQt6.QtCore import QTimer, pyqtSignal, QObject
 
 from core.state_machine import StateMachine, AppState
 from core.hotkey_manager import HotkeyManager
@@ -28,16 +27,48 @@ from utils.model_manager import ModelManager
 qt_app = None
 
 
-class MainThreadBridge(QObject):
+class MainThreadBridge:
     """
     Thread-safe bridge to execute PyQt6 operations on the main thread.
 
-    PyQt signals are thread-safe and automatically route to the main thread,
-    even when emitted from background threads (like pynput's hotkey thread).
+    Uses simple locks and flags instead of Qt signals since we're running
+    rumps event loop, not Qt event loop.
     """
-    show_recording_signal = pyqtSignal()
-    hide_recording_signal = pyqtSignal()
-    update_audio_level_signal = pyqtSignal(float)
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._pending_show = False
+        self._pending_hide = False
+        self._pending_audio_level = None
+
+    def request_show_recording(self):
+        """Request to show recording indicator (thread-safe)"""
+        with self._lock:
+            self._pending_show = True
+            self._pending_hide = False
+
+    def request_hide_recording(self):
+        """Request to hide recording indicator (thread-safe)"""
+        with self._lock:
+            self._pending_hide = True
+            self._pending_show = False
+
+    def request_update_audio_level(self, level: float):
+        """Request to update audio level (thread-safe)"""
+        with self._lock:
+            self._pending_audio_level = level
+
+    def get_and_clear_pending_operations(self):
+        """Get pending operations and clear them (thread-safe)"""
+        with self._lock:
+            show = self._pending_show
+            hide = self._pending_hide
+            level = self._pending_audio_level
+
+            self._pending_show = False
+            self._pending_hide = False
+            self._pending_audio_level = None
+
+            return show, hide, level
 
 
 class VoiceModeApp(rumps.App):
@@ -77,15 +108,15 @@ class VoiceModeApp(rumps.App):
 
         # Thread-safe bridge for Qt operations from background threads
         self.qt_bridge = MainThreadBridge()
-        self.qt_bridge.show_recording_signal.connect(self._show_recording_on_main_thread)
-        self.qt_bridge.hide_recording_signal.connect(self._hide_recording_on_main_thread)
-        self.qt_bridge.update_audio_level_signal.connect(self._update_audio_level_on_main_thread)
 
         # Setup menu
         self._setup_menu()
 
         # Register state callbacks
         self._setup_state_callbacks()
+
+        # Start periodic timer to process Qt operations on main thread
+        self._start_qt_operations_timer()
 
     def _setup_menu(self):
         """Setup menu bar dropdown menu"""
@@ -181,30 +212,40 @@ class VoiceModeApp(rumps.App):
         self.title = "🔴"  # Red dot
         self.menu_status.title = "🔴 Recording..."
 
-        # Emit signal to show recording indicator on main thread
+        # Request to show recording indicator (thread-safe)
         # (This callback is triggered from pynput background thread)
-        self.qt_bridge.show_recording_signal.emit()
+        self.qt_bridge.request_show_recording()
 
     def _on_recording_stop(self):
         """Called when stopping recording (from background thread)"""
-        # Emit signal to hide recording indicator on main thread
-        self.qt_bridge.hide_recording_signal.emit()
+        # Request to hide recording indicator (thread-safe)
+        self.qt_bridge.request_hide_recording()
 
-    def _show_recording_on_main_thread(self):
-        """Show recording indicator (runs on main Qt thread via signal)"""
-        self._ensure_recording_indicator()
-        if self.recording_indicator:
-            self.recording_indicator.show_recording()
+    def _start_qt_operations_timer(self):
+        """Start periodic timer to process Qt operations on main thread"""
+        @rumps.timer(0.05)  # Run every 50ms
+        def process_qt_operations(sender):
+            """Process pending Qt operations (runs on main thread)"""
+            # Get pending operations from background threads
+            show, hide, level = self.qt_bridge.get_and_clear_pending_operations()
 
-    def _hide_recording_on_main_thread(self):
-        """Hide recording indicator (runs on main Qt thread via signal)"""
-        if self.recording_indicator:
-            self.recording_indicator.hide_recording()
+            # Execute on main thread
+            if show:
+                self._ensure_recording_indicator()
+                if self.recording_indicator:
+                    self.recording_indicator.show_recording()
 
-    def _update_audio_level_on_main_thread(self, level: float):
-        """Update audio level (runs on main Qt thread via signal)"""
-        if self.recording_indicator:
-            self.recording_indicator.update_audio_level(level)
+            if hide:
+                if self.recording_indicator:
+                    self.recording_indicator.hide_recording()
+
+            if level is not None:
+                if self.recording_indicator:
+                    self.recording_indicator.update_audio_level(level)
+
+            # Also process Qt events
+            if qt_app:
+                qt_app.processEvents()
 
     def _on_processing(self, **kwargs):
         """Called when starting transcription"""
@@ -422,9 +463,9 @@ github.com/yourusername/voice-mode
             # Set up audio level callback to update recording indicator
             # Callback will update indicator if it exists (created lazily)
             def on_audio_chunk(chunk, level):
-                # Emit signal to update audio level on main Qt thread
+                # Request to update audio level (thread-safe)
                 # (This callback runs on audio thread)
-                self.qt_bridge.update_audio_level_signal.emit(level)
+                self.qt_bridge.request_update_audio_level(level)
 
             self.audio_recorder.set_audio_chunk_callback(on_audio_chunk)
 
@@ -487,15 +528,7 @@ def main():
     print("\nInitializing Qt application...")
     qt_app = QApplication(sys.argv)
 
-    # Process Qt events periodically (needed for PyQt6 widgets to work with rumps)
-    def process_qt_events():
-        if qt_app:
-            qt_app.processEvents()
-
-    # Set up a timer to process Qt events periodically
-    qt_timer = QTimer()
-    qt_timer.timeout.connect(process_qt_events)
-    qt_timer.start(50)  # Process events every 50ms
+    # Qt events will be processed by rumps.timer in VoiceModeApp
 
     # Check permissions first
     print("\nChecking macOS permissions...")
