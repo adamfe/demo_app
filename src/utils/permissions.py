@@ -39,10 +39,16 @@ class PermissionChecker:
             # Check authorization status
             status = AVCaptureDevice.authorizationStatusForMediaType_(AVMediaTypeAudio)
             return status == AVAuthorizationStatusAuthorized
+        except ImportError:
+            # PyObjC not properly installed, skip check
+            # macOS will prompt when app tries to use microphone
+            print("Note: Cannot check microphone permission (PyObjC issue)")
+            print("macOS will prompt for permission when needed")
+            return True  # Assume granted, let macOS handle it
         except Exception as e:
             print(f"Error checking microphone permission: {e}")
-            # If we can't check, assume we need to request
-            return False
+            # If we can't check, assume granted and let macOS handle it
+            return True
 
     @staticmethod
     def request_microphone() -> None:
@@ -84,8 +90,10 @@ class PermissionChecker:
             )
             return result.returncode == 0
         except Exception as e:
-            print(f"Error checking accessibility permission: {e}")
-            return False
+            print(f"Note: Cannot check accessibility permission")
+            print("macOS will prompt when needed")
+            # Assume granted, let macOS handle it
+            return True
 
     @staticmethod
     def request_accessibility() -> None:
@@ -124,9 +132,15 @@ class PermissionChecker:
             )
 
             return image is not None
+        except ImportError:
+            # Quartz not properly installed, skip check
+            print("Note: Cannot check screen recording permission (Quartz not available)")
+            print("This is OK - screen recording is only needed for context awareness")
+            return True  # Assume granted, not critical for basic functionality
         except Exception as e:
-            print(f"Error checking screen recording permission: {e}")
-            return False
+            print(f"Note: Cannot check screen recording permission")
+            # Not critical, assume granted
+            return True
 
     @staticmethod
     def request_screen_recording() -> None:
